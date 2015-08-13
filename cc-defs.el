@@ -45,7 +45,20 @@
 	   load-path)))
     (load "cc-bytecomp" nil t)))
 
-(cc-external-require 'cl)
+(eval-and-compile
+  (defvar c--mapcan-status
+    (cond ((and (fboundp 'mapcan)
+		(subrp (symbol-function 'mapcan)))
+	   ;; XEmacs
+	   'mapcan)
+	  ((locate-file "cl-lib.elc" load-path)
+	   ;; Emacs >= 24.3
+	   'cl-mapcan)
+	  (t
+	   ;; Emacs <= 24.2
+	   nil))))
+
+(cc-external-require (if (eq c--mapcan-status 'cl-mapcan) 'cl-lib 'cl))
 (cc-external-require 'regexp-opt)
 
 ;; Silence the compiler.
@@ -181,6 +194,45 @@ This variant works around bugs in `eval-when-compile' in various
 
 
 ;;; Macros.
+(defmacro c--mapcan (fun liszt)
+  ;; CC Mode equivalent of `mapcan' which bridges the difference
+  ;; between the host [X]Emacsen."
+  ;; The motivation for this macro is to avoid the irritating message
+  ;; "function `mapcan' from cl package called at runtime" produced by Emacs.
+  (cond
+   ((eq c--mapcan-status 'mapcan)
+    `(mapcan ,fun ,liszt))
+   ((eq c--mapcan-status 'cl-mapcan)
+    `(cl-mapcan ,fun ,liszt))
+   (t
+    ;; Emacs <= 24.2.  It would be nice to be able to distinguish between
+    ;; compile-time and run-time use here.
+    `(apply 'nconc (mapcar ,fun ,liszt)))))
+
+(defmacro c--set-difference (liszt1 liszt2 &rest other-args)
+  ;; Macro to smooth out the renaming of `set-difference' in Emacs 24.3.
+  (if (eq c--mapcan-status 'cl-mapcan)
+      `(cl-set-difference ,liszt1 ,liszt2 ,@other-args)
+    `(set-difference ,liszt1 ,liszt2 ,@other-args)))
+
+(defmacro c--intersection (liszt1 liszt2 &rest other-args)
+  ;; Macro to smooth out the renaming of `intersection' in Emacs 24.3.
+  (if (eq c--mapcan-status 'cl-mapcan)
+      `(cl-intersection ,liszt1 ,liszt2 ,@other-args)
+    `(intersection ,liszt1 ,liszt2 ,@other-args)))
+
+(eval-and-compile
+  (defmacro c--macroexpand-all (form &optional environment)
+    ;; Macro to smooth out the renaming of `cl-macroexpand-all' in Emacs 24.3.
+    (if (eq c--mapcan-status 'cl-mapcan)
+	`(macroexpand-all ,form ,environment)
+      `(cl-macroexpand-all ,form ,environment)))
+
+  (defmacro c--delete-duplicates (cl-seq &rest cl-keys)
+    ;; Macro to smooth out the renaming of `delete-duplicates' in Emacs 24.3.
+    (if (eq c--mapcan-status 'cl-mapcan)
+	`(cl-delete-duplicates ,cl-seq ,@cl-keys)
+      `(delete-duplicates ,cl-seq ,@cl-keys))))
 
 (defmacro c-point (position &optional point)
   "Return the value of certain commonly referenced POSITIONs relative to POINT.
@@ -1603,7 +1655,7 @@ The optional MODE specifies the language to get `c-nonsymbol-key' from
 when it's needed.  The default is the current language taken from
 `c-buffer-is-cc-mode'."
 
-  (setq list (delete nil (delete-duplicates list :test 'string-equal)))
+  (setq list (delete nil (c--delete-duplicates list :test 'string-equal)))
   (if list
       (let (re)
 
@@ -2142,7 +2194,7 @@ constant.  A file is identified by its base name."
 	;; reason, but we also use this expansion handle
 	;; `c-lang-defconst-eval-immediately' and to register
 	;; dependencies on the `c-lang-const's in VAL.)
-	(setq val (cl-macroexpand-all val))
+	(setq val (c--macroexpand-all val))
 
 	(setq bindings (cons (cons assigned-mode val) bindings)
 	      args (cdr args))))
@@ -2253,11 +2305,11 @@ quoted."
 	;; are no file dependencies needed.
 	(setq source-files (nreverse
 			    ;; Reverse to get the right load order.
-			    (mapcan (lambda (elem)
-				      (if (eq file (car elem))
-					  nil ; Exclude our own file.
-					(list (car elem))))
-				    (get sym 'source)))))
+			    (c--mapcan (lambda (elem)
+					 (if (eq file (car elem))
+					     nil ; Exclude our own file.
+					   (list (car elem))))
+				      (get sym 'source)))))
 
       ;; Make some effort to do a compact call to
       ;; `c-get-lang-constant' since it will be compiled in.
