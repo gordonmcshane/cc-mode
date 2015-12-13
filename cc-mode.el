@@ -102,10 +102,9 @@
 (cc-bytecomp-defvar file-local-variables-alist)
 (cc-bytecomp-defvar dir-local-variables-alist)
 
-;; We set these variables during mode init, yet we don't require
+;; We set this variable during mode init, yet we don't require
 ;; font-lock.
 (cc-bytecomp-defvar font-lock-defaults)
-(cc-bytecomp-defvar font-lock-syntactic-keywords)
 
 ;; Menu support for both XEmacs and Emacs.  If you don't have easymenu
 ;; with your version of Emacs, you are incompatible!
@@ -628,6 +627,15 @@ that requires a literal mode spec at compile time."
     (font-lock-mode 0)
     (font-lock-mode 1)))
 
+;; Buffer local variables defining the region to be fontified by a font lock
+;; after-change function.  They are set in c-after-change to
+;; after-change-functions' BEG and END, and may be modified by functions in
+;; `c-before-font-lock-functions'.
+(defvar c-new-BEG 0)
+(make-variable-buffer-local 'c-new-BEG)
+(defvar c-new-END 0)
+(make-variable-buffer-local 'c-new-END)
+
 (defun c-common-init (&optional mode)
   "Common initialization for all CC Mode modes.
 In addition to the work done by `c-basic-common-init' and
@@ -823,15 +831,6 @@ Note that the style variables are always made local to the buffer."
 
 
 ;;; Change hooks, linking with Font Lock.
-
-;; Buffer local variables defining the region to be fontified by a font lock
-;; after-change function.  They are set in c-after-change to
-;; after-change-functions' BEG and END, and may be modified by functions in
-;; `c-before-font-lock-functions'.
-(defvar c-new-BEG 0)
-(make-variable-buffer-local 'c-new-BEG)
-(defvar c-new-END 0)
-(make-variable-buffer-local 'c-new-END)
 
 ;; Buffer local variables recording Beginning/End-of-Macro position before a
 ;; change, when a macro straddles, respectively, the BEG or END (or both) of

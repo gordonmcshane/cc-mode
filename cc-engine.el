@@ -5587,6 +5587,10 @@ comment at the start of cc-engine.el for more info."
 	(c-unmark-<->-as-paren pos))
       t)))
 
+;; Set by c-common-init in cc-mode.el.
+(defvar c-new-BEG)
+(defvar c-new-END)
+
 (defun c-before-change-check-<>-operators (beg end)
   ;; Unmark certain pairs of "< .... >" which are currently marked as
   ;; template/generic delimiters.  (This marking is via syntax-table

@@ -279,6 +279,11 @@ perhaps a `cc-bytecomp-restore-environment' is forgotten somewhere"))
 	(cc-bytecomp-debug-msg
 	 "cc-bytecomp-restore-environment: Done"))))
 
+(defun cc-bytecomp-load (cc-part)
+  ;; A dummy function which will immediately be overwritten by the
+  ;; following at load time.  This should suppress the byte compiler
+  ;; error that the function is "not known to be defined".
+  )
 (eval
  ;; This eval is to avoid byte compilation of the function below.
  ;; There's some bug in XEmacs 21.4.6 that can cause it to dump core
@@ -321,6 +326,34 @@ somewhat intentional."
   `(progn
      (eval-when-compile (cc-bytecomp-load (symbol-name ,cc-part)))
      (require ,cc-part)))
+
+(defmacro cc-conditional-require (cc-part condition)
+  "If the CONDITION is satisfied at compile time, (i) force the
+file CC-PART.el in the current directory to be loaded at compile
+time, (ii) generate code to load the file at load time.
+
+CC-PART will normally be a quoted name such as 'cc-fix.
+CONDITION should not be quoted."
+  (if (eval condition)
+      (progn
+       (cc-bytecomp-load (symbol-name (eval cc-part)))
+       `(require ,cc-part))
+    '(progn)))
+
+(defmacro cc-conditional-require-after-load (cc-part file condition)
+  "If the CONDITION is satified at compile time, (i) force the
+file CC-PART.el in the current directory to be loaded at compile
+time, (ii) generate an `eval-after-load' form to load CC-PART.el
+after the loading of FILE.
+
+CC-PART will normally be a quoted name such as 'cc-fix.  FILE
+should be a string.  CONDITION should not be quoted."
+  (if (eval condition)
+      (progn
+       (cc-bytecomp-load (symbol-name (eval cc-part)))
+       `(eval-after-load ,file
+          '(require ,cc-part)))
+    '(progn)))
 
 (defmacro cc-provide (feature)
   "A replacement for the `provide' form that restores the environment

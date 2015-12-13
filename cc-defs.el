@@ -78,37 +78,22 @@
 
 ;; cc-fix.el contains compatibility macros that should be used if
 ;; needed.
-(eval-and-compile
-  (if (or (/= (regexp-opt-depth "\\(\\(\\)\\)") 2)
-	  (not (fboundp 'push)))
-      (cc-load "cc-fix")))
+(cc-conditional-require
+ 'cc-fix (or (/= (regexp-opt-depth "\\(\\(\\)\\)") 2)
+	     (not (fboundp 'push))
+	     ;; XEmacs 21.4 doesn't have `delete-dups'.
+	     (not (fboundp 'delete-dups))))
 
-(eval-after-load "font-lock"
-  '(if (and (not (featurep 'cc-fix)) ; only load the file once.
-	    (featurep 'xemacs) ; There is now (2005/12) code in GNU Emacs CVS
-			       ; to make the call to f-l-c-k throw an error.
-	    (let (font-lock-keywords)
-	      (font-lock-compile-keywords '("\\<\\>"))
-	      font-lock-keywords))     ; did the previous call foul this up?
-       (load "cc-fix")))
+(cc-conditional-require-after-load
+ 'cc-fix "font-lock"
+ (and
+  (featurep 'xemacs)
+  (progn
+    (require 'font-lock)
+    (let (font-lock-keywords)
+      (font-lock-compile-keywords '("\\<\\>"))
+      font-lock-keywords))))
 
-;; The above takes care of the delayed loading, but this is necessary
-;; to ensure correct byte compilation.
-(eval-when-compile
-  (if (and (featurep 'xemacs)
-	   (not (featurep 'cc-fix))
-	   (progn
-	     (require 'font-lock)
-	     (let (font-lock-keywords)
-	       (font-lock-compile-keywords '("\\<\\>"))
-	       font-lock-keywords)))
-      (cc-load "cc-fix")))
-
-;; XEmacs 21.4 doesn't have `delete-dups'.
-(eval-and-compile
-  (if (and (not (fboundp 'delete-dups))
-	   (not (featurep 'cc-fix)))
-      (cc-load "cc-fix")))
 
 ;;; Variables also used at compile time.
 
@@ -388,6 +373,8 @@ to it is returned.  This function does not modify the point or the mark."
 	  ((eq position 'eosws)	(c-forward-syntactic-ws))
 	  (t (error "Unknown buffer position requested: %s" position))))
        (point))))
+
+(defvar c-use-extents)
 
 (defmacro c-next-single-property-change (position prop &optional object limit)
   ;; See the doc string for either of the defuns expanded to.
@@ -1510,6 +1497,8 @@ been put there by c-put-char-property.  POINT remains unchanged."
 					  ,oldstate)))
 
 
+(defvar c-emacs-features)
+
 (defmacro c-looking-at-non-alphnumspace ()
   "Are we looking at a character which isn't alphanumeric or space?"
   (if (memq 'gen-comment-delim c-emacs-features)
