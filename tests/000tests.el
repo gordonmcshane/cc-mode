@@ -817,7 +817,7 @@ to be set as a file local variable.")
 
 	    ;; Record the expected indentation and reindent.  This is done
 	    ;; in backward direction to avoid cascading errors.
-	    (while (= (forward-line -1) 0)
+	    (while (= (forward-line (if (and (eobp) (not (bolp))) 0 -1)) 0)
 	      (back-to-indentation)
 	      (setq expectedindent (cons (current-column) expectedindent))
 	      (unless (eolp)
