@@ -9540,7 +9540,7 @@ comment at the start of cc-engine.el for more info."
 	 literal char-before-ip before-ws-ip char-after-ip macro-start
 	 in-macro-expr c-syntactic-context placeholder c-in-literal-cache
 	 step-type tmpsymbol keyword injava-inher special-brace-list tmp-pos
-	 containing-<
+	 tmp-pos2 containing-<
 	 ;; The following record some positions for the containing
 	 ;; declaration block if we're directly within one:
 	 ;; `containing-decl-open' is the position of the open
@@ -10389,19 +10389,22 @@ comment at the start of cc-engine.el for more info."
 	  (c-beginning-of-statement-1 containing-sexp)
 	  (c-add-stmt-syntax 'statement nil t containing-sexp paren-state))
 
-	 ;;CASE 5N: We are at a topmost continuation line and the only
+	 ;;CASE 5S: We are at a topmost continuation line and the only
 	 ;;preceding items are annotations.
 	 ((and (c-major-mode-is 'java-mode)
 	       (setq placeholder (point))
 	       (c-beginning-of-statement-1)
 	       (progn
-		 (while (and (c-forward-annotation))
-		   (c-forward-syntactic-ws))
+		 (while (and (setq tmp-pos (point))
+			     (< (point) placeholder)
+			     (c-forward-annotation))
+		   (c-forward-syntactic-ws)
+		   (setq tmp-pos2 tmp-pos))
 		 t)
-	   (prog1
-	       (>= (point) placeholder)
-	     (goto-char placeholder)))
-	  (c-add-syntax 'annotation-top-cont (c-point 'boi)))
+	       (prog1
+		   (>= (point) placeholder)
+		 (goto-char placeholder)))
+	  (c-add-syntax 'annotation-top-cont (c-point 'boi tmp-pos2)))
 
 	 ;; CASE 5M: we are at a topmost continuation line
 	 (t
