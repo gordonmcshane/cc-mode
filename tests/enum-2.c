@@ -10,7 +10,7 @@ static PyObject **
 unpack_sequence(v, argcnt, why)
     PyObject **v;
     int argcnt;
-    enum *why_code;
+    enum why_code *why;
 {
     int i;
 }
