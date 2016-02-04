@@ -7,6 +7,7 @@ int main() {
     t1 (id)[n] = {1};
     t1 (*id)[n] = NULL;
     t1 (id) (1);
+    t1 (*id) (t3);              // Unknown type/#define t3.
 
     // These might be function or macro calls.
     f1 (id) = 1;
