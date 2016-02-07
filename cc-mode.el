@@ -151,13 +151,14 @@
   (when c-buffer-is-cc-mode
     (save-restriction
       (widen)
-      (c-clear-char-properties (point-min) (point-max) 'category)
-      (c-clear-char-properties (point-min) (point-max) 'syntax-table)
-      (c-clear-char-properties (point-min) (point-max) 'c-is-sws)
-      (c-clear-char-properties (point-min) (point-max) 'c-in-sws)
-      (c-clear-char-properties (point-min) (point-max) 'c-type)
-      (if (c-major-mode-is 'awk-mode)
-	  (c-clear-char-properties (point-min) (point-max) 'c-awk-NL-prop)))
+      (c-save-buffer-state ()
+	(c-clear-char-properties (point-min) (point-max) 'category)
+	(c-clear-char-properties (point-min) (point-max) 'syntax-table)
+	(c-clear-char-properties (point-min) (point-max) 'c-is-sws)
+	(c-clear-char-properties (point-min) (point-max) 'c-in-sws)
+	(c-clear-char-properties (point-min) (point-max) 'c-type)
+	(if (c-major-mode-is 'awk-mode)
+	    (c-clear-char-properties (point-min) (point-max) 'c-awk-NL-prop))))
     (setq c-buffer-is-cc-mode nil)))
 
 (defun c-init-language-vars-for (mode)
