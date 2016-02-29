@@ -2061,7 +2061,7 @@ comment at the start of cc-engine.el for more info."
 
 	     ((and c-opt-cpp-prefix
 		   (save-excursion
-		     (and (c-simple-skip-symbol-backward)
+		     (and (< (skip-syntax-backward "w_") 0)
 			  (progn (setq next-rung-pos (point))
 				 (looking-at c-noise-macro-name-re)))))
 	      ;; Skipped over a noise macro
